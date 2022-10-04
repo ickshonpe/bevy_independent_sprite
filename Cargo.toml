@@ -1,0 +1,21 @@
+[package]
+name = "bevy_independent_sprite"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+keywords = ["bevy", "graphics", "sprites", "games", "render"]
+categories = ["game-development", "graphics"]
+repository = "https://github.com/ickshonpe/bevy_independent_sprite"
+readme = "README.md"
+description = "Bevy sprites that don't rotate or scale with their transform"
+
+[dependencies]
+copyless = "0.1.5"
+
+[dependencies.bevy]
+version = "0.8"
+default-features = false
+features = ["render", "bevy_asset"]
+
+[dev-dependencies]
+bevy = "0.8"
