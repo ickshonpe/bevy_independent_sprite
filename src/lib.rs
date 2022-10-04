@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 use bevy::render::Extract;
+use bevy::render::RenderApp;
+use bevy::render::RenderStage;
 use bevy::render::texture::DEFAULT_IMAGE_HANDLE;
 use bevy::sprite::ExtractedSprite;
 use bevy::sprite::ExtractedSprites;
+use bevy::sprite::SpriteSystem;
 use copyless::VecHelper;
 
 #[derive(Component, Debug, Default, Clone, Reflect, Deref, DerefMut)]
@@ -150,10 +153,24 @@ pub struct IndependentSpritePlugin;
 impl Plugin for IndependentSpritePlugin {
     fn build(&self, app: &mut App) {
         app
+        .register_type::<IndependentSprite>()
+        .register_type::<IndependentTextureAtlasSprite>()
+        .register_type::<IndependentTransform>()
+        .register_type::<ComputedTransform>()
         .add_system_to_stage(
             CoreStage::PostUpdate, 
             compute_transform
             .after(bevy::transform::TransformSystem::TransformPropagate)
         );
+
+        if let Ok(render_app) = app.get_sub_app_mut(RenderApp) {
+            render_app
+            .add_system_to_stage(
+                RenderStage::Extract,
+                extract_independent_sprites
+                    .after(SpriteSystem::ExtractSprites),
+            );
+        }
+
     }
 }
