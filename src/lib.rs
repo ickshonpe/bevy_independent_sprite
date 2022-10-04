@@ -1,5 +1,9 @@
 use bevy::prelude::*;
+use bevy::render::Extract;
 use bevy::render::texture::DEFAULT_IMAGE_HANDLE;
+use bevy::sprite::ExtractedSprite;
+use bevy::sprite::ExtractedSprites;
+use copyless::VecHelper;
 
 #[derive(Component, Debug, Default, Clone, Reflect, Deref, DerefMut)]
 #[repr(C)]
@@ -76,6 +80,70 @@ fn compute_transform(
         *computed.translation_mut() += global.translation_vec3a();
     });
 }
+
+
+pub fn extract_independent_sprites(
+    mut extracted_sprites: ResMut<ExtractedSprites>,
+    texture_atlases: Extract<Res<Assets<TextureAtlas>>>,
+    sprite_query: Extract<
+        Query<(
+            Entity,
+            &ComputedVisibility,
+            &IndependentSprite,
+            &ComputedTransform,
+            &Handle<Image>,
+        )>,
+    >,
+    atlas_query: Extract<
+        Query<(
+            Entity,
+            &ComputedVisibility,
+            &IndependentTextureAtlasSprite,
+            &ComputedTransform,
+            &Handle<TextureAtlas>,
+        )>,
+    >,
+) {
+    let mut transform = GlobalTransform::default();
+    for (entity, visibility, sprite, global_transform, handle) in sprite_query.iter() {
+        if !visibility.is_visible() {
+            continue;
+        }
+        *transform.translation_mut() = global_transform.translation_vec3a();
+        extracted_sprites.sprites.alloc().init(ExtractedSprite {
+            entity,
+            color: sprite.color,
+            transform,
+            rect: None,
+            custom_size: sprite.custom_size,
+            flip_x: sprite.flip_x,
+            flip_y: sprite.flip_y,
+            image_handle_id: handle.id,
+            anchor: sprite.anchor.as_vec(),
+        });
+    }
+    for (entity, visibility, atlas_sprite, global_transform, texture_atlas_handle) in atlas_query.iter() {
+        if !visibility.is_visible() {
+            continue;
+        }
+        if let Some(texture_atlas) = texture_atlases.get(texture_atlas_handle) {
+            let rect = Some(texture_atlas.textures[atlas_sprite.index as usize]);
+            *transform.translation_mut() = global_transform.translation_vec3a();
+            extracted_sprites.sprites.alloc().init(ExtractedSprite {
+                entity,
+                color: atlas_sprite.color,
+                transform,
+                rect,
+                custom_size: atlas_sprite.custom_size,
+                flip_x: atlas_sprite.flip_x,
+                flip_y: atlas_sprite.flip_y,
+                image_handle_id: texture_atlas.texture.id,
+                anchor: atlas_sprite.anchor.as_vec(),
+            });
+        }
+    }
+}
+
 
 pub struct IndependentSpritePlugin;
 
